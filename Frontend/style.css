@@ -1,0 +1,286 @@
+/* ====================================================================
+   Vejrstation – frontend
+   ==================================================================== */
+
+:root {
+  --bg: #f4f6f9;
+  --surface: #ffffff;
+  --border: #dde3ec;
+  --text: #16202e;
+  --muted: #5b6878;
+  --accent: #1f6feb;
+  --accent-soft: #e8f0fe;
+  --new: #0f8a4a;
+  --new-soft: #e4f6ec;
+  --error: #b42318;
+  --error-soft: #fdecea;
+  --warn-soft: #fff6e0;
+  --warn-border: #f0c86a;
+  --radius: 12px;
+  --shadow: 0 1px 2px rgba(16, 24, 40, .06), 0 4px 12px rgba(16, 24, 40, .05);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #11161d;
+    --surface: #19202a;
+    --border: #2b3542;
+    --text: #e7edf5;
+    --muted: #9aa8b8;
+    --accent: #6aa5ff;
+    --accent-soft: #1d2a3e;
+    --new: #52d08a;
+    --new-soft: #16302350;
+    --error: #ff9b91;
+    --error-soft: #3a1f1d;
+    --warn-soft: #332a14;
+    --warn-border: #6b561f;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 14px rgba(0, 0, 0, .25);
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  line-height: 1.5;
+}
+
+.wrap {
+  width: min(1000px, 100% - 2rem);
+  margin-inline: auto;
+}
+
+a { color: var(--accent); }
+
+/* ---- Toppen ------------------------------------------------------- */
+
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 1.5rem 0 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.topbar h1 {
+  margin: 0;
+  font-size: 1.6rem;
+  letter-spacing: -.01em;
+}
+
+.sub {
+  margin: .35rem 0 0;
+  color: var(--muted);
+  font-size: .95rem;
+}
+
+/* ---- Testdata-banner ---------------------------------------------- */
+
+.banner {
+  background: var(--warn-soft);
+  border: 1px solid var(--warn-border);
+  border-radius: var(--radius);
+  padding: .7rem .9rem;
+  margin: 0 0 1.25rem;
+  font-size: .92rem;
+}
+
+.banner code {
+  font-size: .88em;
+  background: rgba(127, 127, 127, .18);
+  padding: .1em .35em;
+  border-radius: 4px;
+}
+
+/* ---- Kontroller --------------------------------------------------- */
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .75rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: .85rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.field label {
+  font-weight: 600;
+  font-size: .9rem;
+}
+
+select,
+.btn {
+  font: inherit;
+  font-size: .95rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: .4rem .7rem;
+}
+
+select { min-width: 10rem; }
+
+.btn {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn:hover:not(:disabled) { filter: brightness(1.08); }
+.btn:disabled { opacity: .55; cursor: progress; }
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: .92rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.meta {
+  margin: 0 0 0 auto;
+  font-size: .85rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.is-busy .meta { opacity: .5; }
+
+/* ---- Status ------------------------------------------------------- */
+
+.status {
+  margin: 0 0 1rem;
+  padding: .7rem .9rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: .95rem;
+}
+
+.status[hidden] { display: none; }
+
+.status--info  { background: var(--accent-soft); border-color: transparent; }
+.status--empty { color: var(--muted); }
+.status--error { background: var(--error-soft); border-color: transparent; color: var(--error); }
+
+/* ---- Kort --------------------------------------------------------- */
+
+.cards {
+  list-style: none;
+  margin: 0 0 2rem;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1rem 1.1rem 1.1rem;
+}
+
+.card.is-new {
+  border-color: var(--new);
+  animation: fremhaev 1s ease-out;
+}
+
+@keyframes fremhaev {
+  from { background: var(--new-soft); }
+  to   { background: var(--surface); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card.is-new { animation: none; }
+}
+
+.card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+}
+
+.city {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.badge {
+  background: var(--new-soft);
+  color: var(--new);
+  border: 1px solid var(--new);
+  border-radius: 999px;
+  padding: .05rem .5rem;
+  font-size: .75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.temp {
+  margin: .4rem 0 .6rem;
+  font-size: 2.1rem;
+  font-weight: 650;
+  letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+dl { margin: 0; }
+
+.values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem 1.5rem;
+  padding-bottom: .7rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.values .row { min-width: 6.5rem; }
+.values dt { font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+.values dd { margin: 0; font-size: 1.05rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.details {
+  margin-top: .7rem;
+  font-size: .85rem;
+  color: var(--muted);
+}
+
+.details .row {
+  display: flex;
+  gap: .5rem;
+  justify-content: space-between;
+}
+
+.details .row + .row { margin-top: .15rem; }
+.details dt { flex: none; }
+.details dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ---- Bunden ------------------------------------------------------- */
+
+.footer {
+  border-top: 1px solid var(--border);
+  padding: 1rem 0 2rem;
+  font-size: .85rem;
+  color: var(--muted);
+}
+
+.footer p { margin: 0; }

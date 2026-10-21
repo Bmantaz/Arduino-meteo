@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vejrstation – gemte målinger</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="wrap">
+      <h1>Vejrstation</h1>
+      <p class="sub">
+        Målinger gemt fra Arduino Oplà. Vejrdata kommer fra
+        <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>.
+      </p>
+    </div>
+  </header>
+
+  <main class="wrap">
+
+    <!-- Vises kun når app.js kører med USE_MOCK = true -->
+    <p id="mockBanner" class="banner" hidden>
+      <strong>Testdata.</strong> Listen viser opdigtede målinger, ikke databasen.
+      Sæt <code>USE_MOCK = false</code> øverst i <code>app.js</code> for at hente fra backend.
+    </p>
+
+    <section class="controls" aria-label="Filtre og opdatering">
+      <div class="field">
+        <label for="cityFilter">By</label>
+        <select id="cityFilter">
+          <option value="">Alle byer</option>
+        </select>
+      </div>
+
+      <button id="refreshBtn" type="button" class="btn">Opdatér listen</button>
+
+      <label class="toggle">
+        <input type="checkbox" id="autoToggle" checked>
+        <span id="autoLabel">Opdatér automatisk</span>
+      </label>
+
+      <p class="meta" id="meta"></p>
+    </section>
+
+    <p id="status" class="status" role="status" aria-live="polite"></p>
+
+    <ul id="list" class="cards"></ul>
+
+  </main>
+
+  <footer class="wrap footer">
+    <p>
+      Skoleprojekt · Arduino Oplà → .NET-backend → Neon (PostgreSQL) → denne side.
+      Vejrdata fra <a href="https://open-meteo.com/" target="_blank" rel="noopener">open-meteo.com</a>.
+    </p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

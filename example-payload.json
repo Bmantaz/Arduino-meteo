@@ -1,0 +1,14 @@
+{
+  "api": "Open-Meteo",
+  "city": "Aarhus",
+  "latitude": 56.16,
+  "longitude": 10.20,
+  "temperature": 11.3,
+  "temperatureUnit": "°C",
+  "humidity": 87,
+  "humidityUnit": "%",
+  "windSpeed": 4.2,
+  "windSpeedUnit": "m/s",
+  "dataTime": "2026-10-21T14:00",
+  "timezone": "Europe/Copenhagen"
+}

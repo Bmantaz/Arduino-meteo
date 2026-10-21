@@ -426,3 +426,30 @@ FodyWeavers.xsd
 
 # Official VS Code C# Dev Kit Extension exclusion
 #*.lscache
+
+
+# ===== Projekt: Vejrstation med Open-Meteo =====
+
+# Arduino: Wi-Fi-kode og backend-adresse må ikke på GitHub
+arduino/**/arduino_secrets.h
+# men eksempelfilen skal med
+!arduino/**/arduino_secrets.example.h
+
+# Arduino IDE / PlatformIO build-filer
+arduino/**/build/
+.pio/
+
+# Neon: forbindelsesstrengen indeholder kodeordet til databasen.
+# Brug "dotnet user-secrets" eller en .env-fil (ignoreres af *.env ovenfor).
+appsettings.Development.json
+appsettings.Local.json
+# men eksempelfilen med tomme værdier skal med
+!appsettings.Development.example.json
+
+# Frontend build-output
+frontend/dist/
+frontend/build/
+
+# OS-filer
+.DS_Store
+Thumbs.db

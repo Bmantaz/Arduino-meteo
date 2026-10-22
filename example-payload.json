@@ -1,8 +1,6 @@
 {
   "api": "Open-Meteo",
   "city": "Aarhus",
-  "latitude": 56.16,
-  "longitude": 10.20,
   "temperature": 11.3,
   "temperatureUnit": "°C",
   "humidity": 87,

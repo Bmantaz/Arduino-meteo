@@ -8,9 +8,11 @@
 // false = hent rigtige data fra backend
 const USE_MOCK = true;
 
-// Backendens adresse. Fredag: computerens IP + porten backend lytter på,
-// fx "http://192.168.1.42:5240/api/weather"
-const API_URL = "http://localhost:5240/api/weather";
+// Backendens adresse. Ruten hedder /api/weather-records (ikke /api/weather),
+// og porten står i Backend/WeatherApi/Properties/launchSettings.json.
+// Fredag: computerens IP i stedet for localhost,
+// fx "http://192.168.1.42:5144/api/weather-records"
+const API_URL = "http://localhost:5144/api/weather-records";
 
 // Hvor tit listen opdaterer sig selv (millisekunder)
 const REFRESH_MS = 10000;
@@ -26,7 +28,7 @@ const KNOWN_CITIES = ["Aarhus", "København", "Ringkøbing"];
 
 let records = [];                        // det vi viser lige nu
 let cities = new Set(KNOWN_CITIES);      // byer i byfilteret
-let highestId = null;                    // højeste id vi har set
+let seenIds = new Set();                 // id'er vi har set i en tidligere hentning
 let newIds = new Set();                  // id'er der skal have "Ny"
 let rebaseline = true;                   // næste hentning må ikke markere noget som nyt
 let requestNo = 0;                       // så et gammelt svar ikke overskriver et nyt
@@ -137,20 +139,17 @@ function applyData(data) {
   // Backend sorterer nyeste først, men vi gør det igen for en sikkerheds skyld
   records = data.slice().sort(compareNewestFirst);
 
-  // Marker det, der er kommet til siden sidste hentning
-  const idsHere = records.map(r => Number(r.id)).filter(Number.isFinite);
-  const maxHere = idsHere.length ? Math.max(...idsHere) : null;
+  // Marker det, der er kommet til siden sidste hentning.
+  // Backendens id er en Guid (tekst), så vi kan ikke regne med at nye id'er
+  // er større end gamle – vi husker i stedet dem, vi har set før.
+  const idsHere = records.map(r => String(r.id)).filter(id => id && id !== "undefined");
 
-  if (rebaseline || highestId === null) {
-    newIds = new Set();
-    rebaseline = false;
-  } else {
-    newIds = new Set(idsHere.filter(id => id > highestId));
-  }
+  newIds = rebaseline
+    ? new Set()
+    : new Set(idsHere.filter(id => !seenIds.has(id)));
+  rebaseline = false;
 
-  if (maxHere !== null) {
-    highestId = highestId === null ? maxHere : Math.max(highestId, maxHere);
-  }
+  for (const id of idsHere) seenIds.add(id);
 
   // Byfilteret lærer nye byer at kende, men glemmer ikke de gamle
   for (const r of records) {
@@ -188,11 +187,11 @@ function render() {
 }
 
 function renderCard(r) {
-  const id = Number(r.id);
+  const id = String(r.id);
   const isNew = newIds.has(id);
 
   const li = el("li", "card");
-  li.dataset.id = Number.isFinite(id) ? String(id) : "";
+  li.dataset.id = id;
   if (isNew) li.classList.add("is-new");
 
   const top = el("div", "card-top");
@@ -207,12 +206,17 @@ function renderCard(r) {
     ["Vind", formatValue(r.windSpeed, r.windSpeedUnit, 1)]
   ]));
 
-  li.appendChild(definitions("details", [
-    ["Måletidspunkt", formatDataTime(r.dataTime) + (r.timezone ? ` (${r.timezone})` : "")],
-    ["Gemt", formatSavedAt(r.savedAt)],
-    ["Position", formatPosition(r.latitude, r.longitude)],
-    ["Kilde", (r.api || "ukendt") + (Number.isFinite(id) ? ` · #${id}` : "")]
-  ]));
+  const detaljer = [
+    ["Måletidspunkt", formatDataTime(r.dataTime, r.timezone) + (r.timezone ? ` (${r.timezone})` : "")],
+    ["Gemt", formatSavedAt(r.savedAt)]
+  ];
+
+  // Backenden gemmer ikke koordinater, så rækken springes over når de mangler
+  const position = formatPosition(r.latitude, r.longitude);
+  if (position) detaljer.push(["Position", position]);
+
+  detaljer.push(["Kilde", (r.api || "ukendt") + (id ? ` · ${kortId(id)}` : "")]);
+  li.appendChild(definitions("details", detaljer));
 
   return li;
 }
@@ -278,14 +282,45 @@ function formatValue(value, unit, decimals) {
   return n + " " + unit;          // hårdt mellemrum, så tal og enhed ikke deles
 }
 
-// dataTime er lokal tid fra Open-Meteo UDEN tidszone ("2026-10-21T14:00").
-// Den læses derfor som tekst – ellers ville browseren flytte klokkeslættet.
-function formatDataTime(value) {
+// Backenden regner måletidspunktet om til UTC før det gemmes
+// ("2026-10-21T12:00:00Z"), så her vises det i målingens egen tidszone –
+// altså det klokkeslæt Arduinoen viste på skærmen.
+// Kommer der en tekst UDEN tidszone ("2026-10-21T14:00"), er den allerede
+// lokal tid, og så læses den som ren tekst; ellers ville browseren flytte den.
+function formatDataTime(value, timezone) {
   if (typeof value !== "string") return "–";
-  const m = value.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
-  if (!m) return value;
-  const [, year, month, day, hour, minute] = m;
-  return `${day}-${month}-${year} kl. ${hour}:${minute}`;
+
+  const harTidszone = /(Z|[+-]\d{2}:?\d{2})$/.test(value.trim());
+
+  if (!harTidszone) {
+    const m = value.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+    if (!m) return value;
+    const [, aar, maaned, dag, time, minut] = m;
+    return `${dag}-${maaned}-${aar} kl. ${time}:${minut}`;
+  }
+
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return value;
+
+  try {
+    const dele = {};
+    const formatter = new Intl.DateTimeFormat("da-DK", {
+      timeZone: timezone || undefined,
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", hourCycle: "h23"
+    });
+    for (const del of formatter.formatToParts(d)) dele[del.type] = del.value;
+    return `${dele.day}-${dele.month}-${dele.year} kl. ${dele.hour}:${dele.minute}`;
+  } catch (ukendtTidszone) {
+    // ukendt tidszonenavn – vis i computerens egen tid i stedet
+    return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()}` +
+           ` kl. ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+}
+
+// Guid'er er lange, så kortet viser kun første del: #a1b2c3d4
+function kortId(id) {
+  return "#" + (id.includes("-") ? id.split("-")[0] : id);
 }
 
 // savedAt kommer fra databasen med tidszone og vises i computerens lokale tid.
@@ -300,9 +335,11 @@ function formatClock(d) {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
+// Tom tekst betyder "vis ikke rækken" – backenden gemmer ikke koordinater
 function formatPosition(lat, lon) {
+  if (lat === undefined || lat === null || lon === undefined || lon === null) return "";
   const a = Number(lat), b = Number(lon);
-  if (!Number.isFinite(a) || !Number.isFinite(b)) return "–";
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return "";
   return `${a.toFixed(2)}, ${b.toFixed(2)}`;
 }
 
@@ -320,24 +357,25 @@ function el(tag, className, text) {
 function compareNewestFirst(a, b) {
   const ta = Date.parse(a.savedAt), tb = Date.parse(b.savedAt);
   if (Number.isFinite(ta) && Number.isFinite(tb) && ta !== tb) return tb - ta;
-  return Number(b.id) - Number(a.id);
+  return String(b.id).localeCompare(String(a.id));   // id er en Guid, ikke et tal
 }
 
 
 /* ====================================================================
    Testdata – bruges kun når USE_MOCK = true
+   Efterligner backendens svar: Guid som id, tidspunkter i UTC
+   og ingen koordinater.
    ==================================================================== */
 
-const MOCK_CITIES = [
-  { city: "Aarhus", latitude: 56.16, longitude: 10.20 },
-  { city: "København", latitude: 55.68, longitude: 12.57 },
-  { city: "Ringkøbing", latitude: 56.09, longitude: 8.24 }
-];
+const MOCK_CITIES = ["Aarhus", "København", "Ringkøbing"];
 
 let mockRecords = [
-  mockRecord(1, MOCK_CITIES[0], 11.3, 87, 4.2, "2026-10-21T14:00", "2026-10-21T14:03:11+02:00"),
-  mockRecord(2, MOCK_CITIES[1], 12.8, 74, 6.1, "2026-10-21T14:00", "2026-10-21T14:05:02+02:00"),
-  mockRecord(3, MOCK_CITIES[2], 10.4, 91, 9.7, "2026-10-21T15:00", "2026-10-21T15:01:40+02:00")
+  mockRecord("3f1a7c80-1111-4a21-9c01-aa0000000001", "Aarhus",
+             11.3, 87, 4.2, "2026-10-21T12:00:00Z", "2026-10-21T12:03:11Z"),
+  mockRecord("3f1a7c80-2222-4a21-9c01-aa0000000002", "København",
+             12.8, 74, 6.1, "2026-10-21T12:00:00Z", "2026-10-21T12:05:02Z"),
+  mockRecord("3f1a7c80-3333-4a21-9c01-aa0000000003", "Ringkøbing",
+             10.4, 91, 9.7, "2026-10-21T13:00:00Z", "2026-10-21T13:01:40Z")
 ].sort(compareNewestFirst);
 
 let mockCounter = 0;
@@ -356,31 +394,34 @@ async function fetchMock(city) {
 }
 
 function nextMockRecord() {
-  const nextId = Math.max(...mockRecords.map(r => r.id)) + 1;
-  const sted = MOCK_CITIES[nextId % MOCK_CITIES.length];
   const now = new Date();
-
-  const dataTime =
-    `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:00`;
+  const hel = new Date(now);
+  hel.setMinutes(0, 0, 0);                 // Open-Meteo giver hele timer
 
   return mockRecord(
-    nextId,
-    sted,
+    mockGuid(),
+    MOCK_CITIES[mockRecords.length % MOCK_CITIES.length],
     Math.round((6 + Math.random() * 10) * 10) / 10,
     Math.round(60 + Math.random() * 40),
     Math.round(Math.random() * 120) / 10,
-    dataTime,
+    hel.toISOString(),
     now.toISOString()
   );
 }
 
-function mockRecord(id, sted, temperature, humidity, windSpeed, dataTime, savedAt) {
+function mockGuid() {
+  return (crypto.randomUUID && crypto.randomUUID()) ||
+         "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
+           const r = Math.random() * 16 | 0;
+           return (c === "x" ? r : (r & 0x3 | 0x8)).toString(16);
+         });
+}
+
+function mockRecord(id, city, temperature, humidity, windSpeed, dataTime, savedAt) {
   return {
     id,
     api: "Open-Meteo",
-    city: sted.city,
-    latitude: sted.latitude,
-    longitude: sted.longitude,
+    city,
     temperature,
     temperatureUnit: "°C",
     humidity,

@@ -6,7 +6,7 @@
 
 // true  = kør på testdata i browseren (ingen backend nødvendig)
 // false = hent rigtige data fra backend
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 // Backendens adresse. Ruten hedder /api/weather-records (ikke /api/weather),
 // og porten står i Backend/WeatherApi/Properties/launchSettings.json.

@@ -431,12 +431,12 @@ FodyWeavers.xsd
 # ===== Projekt: Vejrstation med Open-Meteo =====
 
 # Arduino: Wi-Fi-kode og backend-adresse må ikke på GitHub
-arduino/**/arduino_secrets.h
+Arduino/**/arduino_secrets.h
 # men eksempelfilen skal med
-!arduino/**/arduino_secrets.example.h
+!Arduino/**/arduino_secrets.example.h
 
 # Arduino IDE / PlatformIO build-filer
-arduino/**/build/
+Arduino/**/build/
 .pio/
 
 # Neon: forbindelsesstrengen indeholder kodeordet til databasen.
@@ -447,8 +447,8 @@ appsettings.Local.json
 !appsettings.Development.example.json
 
 # Frontend build-output
-frontend/dist/
-frontend/build/
+Frontend/dist/
+Frontend/build/
 
 # OS-filer
 .DS_Store

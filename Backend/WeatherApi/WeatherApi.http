@@ -1,6 +1,59 @@
 @WeatherApi_HostAddress = http://localhost:5144
 
-GET {{WeatherApi_HostAddress}}/weatherforecast/
+### Hent alle gemte målinger
+GET {{WeatherApi_HostAddress}}/api/weather-records
 Accept: application/json
 
-###
+### Hent målinger for én by
+GET {{WeatherApi_HostAddress}}/api/weather-records?city=Aarhus
+Accept: application/json
+
+### Gem en måling (samme JSON som Arduinoen sender, se example-payload.json) - forventet 201
+POST {{WeatherApi_HostAddress}}/api/weather-records
+Content-Type: application/json
+
+{
+  "api": "Open-Meteo",
+  "city": "Aarhus",
+  "temperature": 11.3,
+  "temperatureUnit": "°C",
+  "humidity": 87,
+  "humidityUnit": "%",
+  "windSpeed": 4.2,
+  "windSpeedUnit": "m/s",
+  "dataTime": "2026-10-21T14:00",
+  "timezone": "Europe/Copenhagen"
+}
+
+### Ugyldig tidszone - forventet 400 "Ukendt timezone"
+POST {{WeatherApi_HostAddress}}/api/weather-records
+Content-Type: application/json
+
+{
+  "api": "Open-Meteo",
+  "city": "Aarhus",
+  "temperature": 11.3,
+  "temperatureUnit": "°C",
+  "humidity": 87,
+  "humidityUnit": "%",
+  "windSpeed": 4.2,
+  "windSpeedUnit": "m/s",
+  "dataTime": "2026-10-21T14:00",
+  "timezone": "Mars/Olympus"
+}
+
+### Manglende by - forventet 400
+POST {{WeatherApi_HostAddress}}/api/weather-records
+Content-Type: application/json
+
+{
+  "api": "Open-Meteo",
+  "temperature": 11.3,
+  "temperatureUnit": "°C",
+  "humidity": 87,
+  "humidityUnit": "%",
+  "windSpeed": 4.2,
+  "windSpeedUnit": "m/s",
+  "dataTime": "2026-10-21T14:00",
+  "timezone": "Europe/Copenhagen"
+}
